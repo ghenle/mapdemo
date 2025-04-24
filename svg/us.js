@@ -53,7 +53,7 @@ if ( typeof F!==UD && F!==null ) {
         default:
           let t = M.SA(e);
 
-          //console.log(`style element ${e} style ${a}`);
+          console.log(`style element ${e} style ${a}`);
 
           t.forEach((b) => {
             b.setAttribute('style', a);
