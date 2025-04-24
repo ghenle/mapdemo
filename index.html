@@ -1,0 +1,893 @@
+<?php
+# stable 2564 5-25-2023
+
+$vintage = '2022';
+
+?><!DOCTYPE html>
+<html>
+<head>
+  <title>Zoom &amp; Pan Demo</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- info unicode characters &#9432; &#128712; &#8505; and &#9432; -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+
+  :root {
+    --transition_ms: 300ms;
+    --position_0: 0;
+    --position_1: 90px;
+  }
+
+  * {
+    font-family: 'Roboto', sans-serif;
+    box-sizing: border-box;
+  }
+
+
+
+  html {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+  }
+
+  div.map {
+    display: flex;
+    flex-direction: column;
+    width:100%;
+    height: 100%;
+    min-height: calc(100vh - 190px);
+  }
+
+
+  div.selection {
+    position: relative;
+    width: 95%;
+    height: 95%;
+    top: 2.5%;
+    left: 2.5%;
+  }
+
+  div.selection iframe {
+    position: absolute;
+    top: 0
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: url(img/cross.jpg) no-repeat center center;
+    background-size: 10px;
+    overflow: hidden;
+  }
+
+  div.selection object {
+    position: absolute;
+    top: 1%;
+    right: 1%;
+    width: 30px;
+    height: 195px;
+    border: 0;
+  }
+
+  div.chart {
+    z-index: 1001;
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    margin: 0;
+    top: 20px;
+    left: 20px;
+    width: calc(100% - 40px);
+    height: calc(100% - 40px);
+    display: flex;
+    flex-direction: column;
+  }
+  div.chart > div.info {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+  div.chart > div.info > object {
+    flex: 1;
+  }
+  div.chart > div.header {
+    flex: 0 30px;
+    margin: 0;
+    display: flex;
+    border-bottom: 1px solid #aaa;
+  }
+  div.chart > div.header > h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 30px;
+  }
+  div.chart > div.header > span {
+    font-family: FontAwesome;
+    flex: 0 30px;
+    margin: 0;
+    cursor: pointer;
+    text-align: center;
+    line-height: 30px;
+  }
+  div.chart > div.header > a {
+    flex: 0 130px;
+    margin: 0 1rem 0 0;
+    font-size: 0.9rem;
+    text-align: center;
+    line-height: 30px;
+    text-decoration: none;
+  }
+  div.chart > div.header > a:hover {
+    text-decoration: underline;
+  }
+  div.chart > div.header > button {
+    margin: 0.25rem;    
+  }
+
+
+  div.cMenu {
+    z-index: 1000;
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 5px;
+    margin: 0;
+    width: 325px;
+  }
+  div.cMenu h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    border-bottom: 1px solid #aaa;
+  }
+  div.cMenu h3,
+  div.cMenu h4 {
+    color: #2b74b7;
+    margin: 0 0 0.25rem 0;
+    text-align: center;
+  }
+  div.cMenu h3 {
+    font-size: 0.9rem;
+  }
+  div.cMenu h4 {
+    font-size: 0.85rem;
+  }
+  div.cMenu object {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    width: calc(100%);
+    height: 190px;
+  }
+  div.cMenu h5 {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+  div.cMenu h5.chart {
+    display: flex;
+    justify-content: space-between;
+  }
+  div.cMenu h5.chart span {
+    color: #2b74b7;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  div.cMenu h5.chart span:hover {
+    text-decoration: underline;
+  }
+
+  div.cMenu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0 1rem;
+  }
+  div.cMenu ul > li {
+    margin: 0;
+  }
+  div.cMenu ul > li > a {
+    text-decoration: none;
+    font-size: 0.8rem;
+  }
+  div.cMenu ul > li > a:hover {
+    text-decoration: underline !important;
+  }
+
+  .grab {
+    cursor:grab;
+  }
+  .grabbing {
+    cursor:grabbing;
+  }
+
+  .hide {
+    display: none !important;
+  }
+
+  .show {
+
+  }
+
+
+</style>
+</head>
+<body>
+
+  <div class="chart hide">
+    <div class="header">
+      <h2></h2>
+      <button data-group="top">top</button>
+      <button data-group="near">near</button>
+      <button data-group="bottom">bottom</button>
+      <a href="" target=="_blank">Download Full Chart</a>
+      <span>&#xf00d;<!-- &#10006; --></span>
+    </div>
+    <div class="info">
+      <object data="" type="image/svg+xml"></object>
+    </div>
+  </div>
+  <div class="cMenu hide"></div>
+  <div class="map">
+    <div class="selection">
+      <iframe class="svg" name="svg" src="svg/us.svg" data-svg-css="stroke:#000;stroke-width:1;fill:transparent"></iframe>
+      <object class="control" data="svg/controls.svg" type="image/svg+xml"></object>
+    </div>
+  </div>
+
+
+<script>
+const setAttributes = (e, o)=>{
+  for(let i in o) {
+    e.setAttribute(i, o[i]);
+  }
+};
+const sleep   = ms => new Promise(r => setTimeout(r, ms));
+const ucFirst = str => {return str.charAt(0).toUpperCase() + str.slice(1)};
+
+const fontSize = 10;
+const F        = document.querySelector('iframe.svg');
+const O        = document.querySelector('object.control');
+const C        = document.querySelector('div.cMenu');
+const S        = document.querySelector('div.selection');
+const B        = document.querySelector('div.chart');
+const BTTN     = B.querySelectorAll('div.header > button[data-group]');
+const Bclose   = B.querySelector('div.header > span');
+const JSONURL  = './json.php?';
+const CHARTURL = './chart.php?';
+const GEOURL   = {
+  state:     '/geosvg/2022/state/albers/dccallout/us.svg',
+  county:    '/geosvg/2022/county/mercator/collection/%%fips%%.svg',
+  place:     '/geosvg/2022/place/mercator/collection/%%fips%%.svg',
+  cousub:    '/geosvg/2022/cousub/mercator/collection/%%fips%%.svg',
+  subbarrio: '/geosvg/2022/subbarrio/mercator/collection/%%fips%%.svg'
+};
+const frameBox = {
+  w: F.scrollWidth,
+  h: F.scrollHeight
+};
+let eFO = {
+  bubbles: true,
+  detail: 1
+};
+
+let LVL          = 'state';
+let GEO          = '00';
+let SELECT       = '00';
+let FACT         = 'PST045222';
+let LIMIT        = 10;
+let MAXLIMIT     = 35;
+let GEOS         = null;
+let META         = null;
+let MPOS        = {x:undefined, y:undefined};
+
+let SVG          = null;
+let xhrData      = {};
+let viewBox      = {};
+
+let zoomed       = false;
+let isZooming    = false;
+let isPanning    = false;
+let isGrabbed    = false;
+let keyHoldTime  = 300;
+let eventDelay   = 100;
+let keyHoldTimer = null;
+let keyGrabTimer = null;
+let panStart     = {};
+let panEnd       = {};
+
+let cMap         = null;
+let mMap         = null;
+let tMap         = null;
+let zMin         = null;
+let zMax         = null;
+let sMin         = null;
+let sMax         = null;
+let cMin         = null;
+let cMax         = null;
+let tFrm         = null;
+
+
+
+const getData = async url => {
+  const r = await fetch(url);
+
+  if(!r.ok) {
+    throw new Error(r.statusText);
+  }
+
+  return r.json();
+}
+
+const stylePath = s => {
+  let a = [];
+
+  if ( xhrData.status === 200 ) {
+    for(let g in xhrData.data) {
+      let d = xhrData.data[g];
+
+      let o = {
+        geoid: g,
+        style: `stroke:#000;stroke-width:${s};fill:${d.quantile};fill-opacity:0.5`
+      };
+
+      a.push(o);
+
+      META[g]['xhrData'] = d;
+    }
+
+    let eP = new CustomEvent('stylePaths', {
+      bubbles: true,
+      detail: a
+    });
+    F.dispatchEvent(eP);
+  }
+}
+
+const svgAnimate = b => {
+  let eA = new CustomEvent('animate', {
+    bubbles: true,
+    detail:  b
+  });
+  F.dispatchEvent(eA);
+}
+
+const setControlSlide = a => {
+  let e = new CustomEvent('setSlide', {
+    bubbles: true,
+    detail:  a
+  });
+  O.dispatchEvent(e);
+
+  //console.log(`dispatch setSlide ${a}`);
+}
+
+const controlZoom = a => {
+  let e = new CustomEvent('zoomXY', {
+    bubbles: true,
+    detail:  a
+  });
+  O.dispatchEvent(e);
+
+  //console.log(`dispatch zoomXY ${a}`);
+}
+
+const closeContextMenu = () => {
+  while(C.firstChild && C.removeChild(C.firstChild));
+
+  C.classList.remove('show');
+  C.classList.add('hide');
+};
+
+const closeChart = () => {
+  let h2 = B.querySelector('div.header > h2');
+  let aD = B.querySelector('div.header > a');
+  let oB = B.querySelector('div.info > object');
+
+  while(h2.firstChild && h2.removeChild(h2.firstChild));
+
+  oB.setAttribute( 'data', '' );
+  aD.setAttribute( 'href', '' );
+
+  B.classList.remove('show');
+  B.classList.add('hide');
+};
+
+const openChart = () => {
+  closeContextMenu();
+
+  let hD = B.querySelector('div.header');
+  let h2 = hD.querySelector('h2');
+  let aD = B.querySelector('div.header > a');
+  let oB = B.querySelector('div.info > object');
+
+  while(h2.firstChild && h2.removeChild(h2.firstChild));
+
+  BTTN.forEach((a) => {
+    if ( Object.keys(xhrData.data).length < MAXLIMIT ) {
+      a.setAttribute('disabled', true);
+    } else {
+      a.removeAttribute('disabled');    
+    }
+  });
+
+  h2.appendChild( document.createTextNode( xhrData.facts[FACT].label ) );
+
+  B.classList.remove('hide');
+  B.classList.add('show');
+
+  let bR = hD.getBoundingClientRect();
+  let bW = bR.width;
+  
+  console.log(bW);
+
+  let queryC = new URLSearchParams({
+    geo:    GEO,
+    level:  LVL,
+    fact:   FACT,
+    limit:  MAXLIMIT,
+    select: SELECT,
+    width:  bW
+  });
+
+  let urlC = CHARTURL + queryC.toString();
+
+  let queryD = new URLSearchParams({
+    geo:    GEO,
+    level:  LVL,
+    fact:   FACT,
+    select: SELECT
+  });
+
+  let urlD = CHARTURL + queryD.toString();
+
+  oB.setAttribute( 'data', urlC );
+  aD.setAttribute( 'href', urlD );
+  oB.style.width = `${bW}px`;
+};
+
+BTTN.forEach((a) => {
+  a.addEventListener('click', (b) => {
+    let hD = B.querySelector('div.header');
+    let dG = b.target.getAttribute('data-group');
+    let oB = B.querySelector('div.info > object');
+    let bR = hD.getBoundingClientRect();
+    let bW = bR.width;
+  
+    console.log(bW);
+
+    let query = new URLSearchParams({
+      geo:    GEO,
+      level:  LVL,
+      fact:   FACT,
+      limit:  MAXLIMIT,
+      select: SELECT,
+      group:  dG,
+      width:  bW
+    });
+
+    let url = CHARTURL + query.toString();
+    
+    oB.setAttribute( 'data', url );
+    oB.style.width = `${bW}px`;
+  });
+});
+
+F.addEventListener('svgMouseDown', a => {
+  let e = a.detail.event();
+
+  if (e.button === 0 && !isPanning && !isGrabbed && tMap && typeof tFrm.s !== 'undefined') {
+    keyGrabTimer = setTimeout(() => {
+      isPanning = true;
+
+      SVG.classList.toggle('grab', true);
+    }, keyHoldTime / 3);
+
+    keyHoldTimer = setTimeout(() => {
+      isGrabbed = true;
+
+      panStart = {x:e.x, y:e.y};
+
+      SVG.classList.toggle('grab',     false);
+      SVG.classList.toggle('grabbing', true);
+
+      svgAnimate(false);
+    }, keyHoldTime);
+  }
+});
+
+F.addEventListener('svgMouseMove', a => {
+  let e = a.detail.event();
+
+  if (isPanning && isGrabbed) {
+    panEnd = {x:e.x, y:e.y};
+
+    let x = tFrm.x - (panStart.x - panEnd.x) / tFrm.s;
+    let y = tFrm.y - (panStart.y - panEnd.y) / tFrm.s;
+    let tp = `scale(${tFrm.s}) translate(${x}, ${y})`;
+
+    //console.log(`iFreame ${tp}`);
+    SVG.setAttribute('transform', tp);
+  }
+});
+
+F.addEventListener('svgMouseUp', a => {
+  let e = a.detail.event();
+
+  if (e.button === 0 && isPanning && isGrabbed) {
+    isPanning = false;
+
+    panEnd = {x:e.x, y:e.y};
+
+    tFrm.x = tFrm.x - (panStart.x - panEnd.x) / tFrm.s;
+    tFrm.y = tFrm.y - (panStart.y - panEnd.y) / tFrm.s;
+    let tp = `scale(${tFrm.s}) translate(${tFrm.x}, ${tFrm.y})`;
+
+    //console.log(`iFreame ${tp}`);
+    SVG.setAttribute('transform', tp);
+
+    tMap.set(F, tFrm);
+
+    SVG.classList.toggle('grabbing', false);
+    SVG.classList.toggle('grab',     true);
+
+    setTimeout(() => {
+      isGrabbed = false;
+
+      svgAnimate(true);
+      SVG.classList.toggle('grab', false);
+    }, keyHoldTime);
+
+  // else if the grab is aborted
+  } else if ( keyGrabTimer || keyHoldTimer ) {
+    SVG.classList.toggle('grabbing', false);
+    SVG.classList.toggle('grab',     false);
+    clearTimeout(keyGrabTimer);
+    clearTimeout(keyHoldTimer);
+    keyGrabTimer = null;
+    keyHoldTimer = null;
+    isPanning    = false;
+    isGrabbed    = false;
+  }
+});
+
+F.addEventListener('svgWheel', async a => {
+  let e = a.detail.event();
+
+  //console.log('dispatch zoomXY');
+  isZooming = true;
+
+  let eZ = new CustomEvent('zoomXY', {
+    bubbles: true,
+    detail: {
+      zoomIn:     () => null,
+      wheelDelta: () => e.deltaY * -0.025
+    }
+  });
+  F.dispatchEvent(eZ);
+
+  await sleep(eventDelay);
+
+  //console.log('zoomXY In complete');
+  isZooming = false;
+});
+
+// context menu
+F.addEventListener('svgContextmenu', a => {
+  a.detail.event().preventDefault();
+
+  let e  = a.detail.event();
+
+  SELECT = a.detail.geoid();
+
+  if ( C.classList.contains('hide') ) {
+    let queryO = new URLSearchParams({
+      geo:    GEO,
+      level:  LVL,
+      fact:   FACT,
+      limit:  LIMIT,
+      select: SELECT,
+      width:  300
+    });
+
+    let urlO = CHARTURL + queryO.toString();
+
+    while(C.firstChild && C.removeChild(C.firstChild));
+
+    let ul = document.createElement('ul');
+    let h2 = document.createElement('h2');
+    let h3 = document.createElement('h3');
+    let h4 = document.createElement('h4');
+    let h5 = document.createElement('h5');
+    let h6 = document.createElement('h5');
+    let oB = document.createElement('object');
+    let sP = document.createElement('span');
+    let lT = document.createTextNode( META[SELECT]['xhrData'].label );
+    let vT = document.createTextNode( META[SELECT]['xhrData'].formattedVal );
+    let fT = document.createTextNode( xhrData.facts[FACT].label );
+    let tT = document.createTextNode( META[SELECT]['xhrData'].label + ' relative to the top 10' );
+    let sT = document.createTextNode( 'Select sub-geographies' );
+    let oT = document.createTextNode( `(view top)` );
+
+    oB.setAttribute('type', 'image/svg+xml');
+    oB.setAttribute('data', urlO);
+
+    h5.setAttribute('class', 'chart');
+
+    META[SELECT]['xhrData'].children.forEach(b => {
+      try {
+        let li = document.createElement('li');
+        let aE = document.createElement('a');
+        let tN = document.createTextNode( ucFirst(b) );
+
+        aE.setAttribute('href', GEOURL[b].replace('%%fips%%', SELECT) );
+        aE.setAttribute('target', 'svg');
+        aE.setAttribute('data-geoid', SELECT);
+        aE.setAttribute('data-level', b);
+
+        aE.appendChild(tN);
+        li.appendChild(aE);
+        ul.appendChild(li);
+      } catch (error) {
+        console.log('"' + b + '"')
+      }
+    });
+    sP.appendChild(oT);
+    h2.appendChild(lT);
+    h3.appendChild(fT);
+    h4.appendChild(vT);
+    h5.appendChild(tT);
+    h5.appendChild(sP);
+    if ( META[SELECT]['xhrData'].children.length > 0 ) {
+      h6.appendChild(sT);
+    }
+    C.appendChild(h2);
+    C.appendChild(h3);
+    C.appendChild(h4);
+    C.appendChild(h5);
+    C.appendChild(oB);
+    C.appendChild(h6);
+    C.appendChild(ul);
+
+    C.classList.remove('hide');
+    C.classList.add('show');
+
+    let cP   = C.getBoundingClientRect();
+    let dP   = document.documentElement.getBoundingClientRect();
+    let left = Math.min((dP.width - cP.width), MPOS.x);
+    let top  = Math.min((dP.height - cP.height), MPOS.y);
+
+
+    C.style.top  = top + 'px';
+    C.style.left = left + 'px';
+  } else {
+    closeContextMenu()
+  }
+
+  console.log('receive svgContextmenu');
+});
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('a[data-level]');
+  const s = e.target.closest('h5.chart > span');
+
+  if (!s && t) {
+    GEO = t.getAttribute('data-geoid');
+    LVL = t.getAttribute('data-level');
+
+    closeContextMenu()
+  }
+
+  if (!t && s) {
+    openChart();
+  }
+});
+
+C.addEventListener('contextmenu', e => {
+  if ( C.classList.contains('show') ) {
+    closeContextMenu();
+  }
+});
+// context menu
+
+F.addEventListener('svgblclick', a => {
+  let e = a.detail.event();
+
+  console.log('receive svgblclick');
+
+});
+
+window.addEventListener('svgPathClick', async e => {
+  if (!isZooming && !isPanning && !isGrabbed) {
+    //console.log('dispatch zoomTo');
+    isZooming = true;
+
+    let eZ = new CustomEvent('zoomTo', {
+      bubbles: true,
+      detail: {
+        geoid:  () => e.detail.geoid(),
+        zoomed: () => true
+      }
+    });
+    F.dispatchEvent(eZ);
+
+    await sleep(eventDelay);
+
+    //console.log('zoomTo complete');
+    isZooming = false;
+  }
+});
+
+window.addEventListener('svgGeoCatalog', e => {
+  mMap = e.detail.mMap().get(F);
+  cMap = e.detail.cMap().get(F);
+  tMap = e.detail.tMap();
+  sMin = e.detail.sMin();
+  sMax = e.detail.sMax();
+  zMin = e.detail.zMin();
+  zMax = e.detail.zMax();
+  SVG  = e.detail.svg();
+  GEOS = e.detail.list();
+  META = e.detail.meta();
+
+  tFrm = tMap.get(F);
+
+  SVG.getAttribute('viewBox').split(' ').map(function(e, i){
+    viewBox[this[i]] = parseFloat(e);
+  }, ['x','y','w','h']);
+
+  /*
+  setAttributes(SVG, {
+    'transform-origin': '',
+    'transform': ''
+  });
+  /**/
+
+  SVG.addEventListener('mousemove', e => {
+    MPOS = {x:e.clientX, y:e.clientY};
+
+    //console.log(MPOS);
+  }, false);
+  
+  let query = new URLSearchParams({
+    geo:   GEO,
+    level: LVL,
+    fact:  FACT
+  });
+
+  let url = JSONURL + query.toString();
+
+  getData(url).then(r => {
+    xhrData = r;
+
+    stylePath(1);
+
+    let eF = new CustomEvent('setFontSize', {
+      bubbles: true,
+      detail: fontSize
+    });
+
+    let eS = new CustomEvent('scaleText', {
+      bubbles: true,
+      detail: 1
+    });
+
+    F.dispatchEvent(eF);
+    F.dispatchEvent(eS);
+
+    //console.log('dispatch setFontSize scaleText');
+  }).catch(e => {
+    console.log(e);
+  });
+});
+
+window.addEventListener('zoomDone', e => {
+  tFrm = e.detail.tMap();
+  tFrm = tMap.get(F);
+
+  //console.log('tFrm: ' + JSON.stringify(tFrm) );
+
+  let s = 1 - (tFrm.s - zMin)/(zMax - zMin);
+  /**
+   * sMin  1/zMax
+   * i =   1/tFrm.s
+   * sMax  1/zMin
+   **/
+  let i = sMin + (sMax - sMin)/(1/zMin-1/zMax) * (1/tFrm.s - 1/zMax);
+
+  //console.log(`setControlSlide(${s}) stylePath(${i}) zMax(${zMax}) tFrm.s(${tFrm.s}) zMin(${zMin})`);
+
+  setControlSlide(s);
+  stylePath(i);
+});
+
+
+// controls
+window.addEventListener('controlLoad', async e => {
+  cMax = e.detail.cMax();
+  cMin = e.detail.cMin();
+});
+
+window.addEventListener('controlReset', async e => {
+  if (!isZooming && !isPanning) {
+    //console.log('dispatch zoomTo (reset)');
+    isZooming = true;
+
+    let eZ = new CustomEvent('zoomTo', {
+      bubbles: true,
+      detail: {
+        geoid:  () => false,
+        zoomed: () => false
+      }
+    });
+    F.dispatchEvent(eZ);
+
+    await sleep(eventDelay);
+
+    //console.log('zoomTo complete');
+    isZooming = false;
+  }
+});
+
+window.addEventListener('controlIn', async e => {
+  if (!isZooming && !isPanning) {
+    //console.log('dispatch zoomXY');
+    isZooming = true;
+
+    let eZ = new CustomEvent('zoomXY', {
+      bubbles: true,
+      detail: {
+        zoomIn:     () => false,
+        wheelDelta: () => null
+      }
+    });
+    F.dispatchEvent(eZ);
+
+    await sleep(eventDelay);
+
+    //console.log('zoomXY In complete');
+    isZooming = false;
+  }
+});
+
+window.addEventListener('controlOut', async e => {
+  if (!isZooming && !isPanning) {
+    //console.log('dispatch zoomXY');
+    isZooming = true;
+
+    let eZ = new CustomEvent('zoomXY', {
+      bubbles: true,
+      detail: {
+        zoomIn:     () => true,
+        wheelDelta: () => null
+      }
+    });
+    F.dispatchEvent(eZ);
+
+    await sleep(eventDelay);
+
+    //console.log('zoomXY Out complete');
+    isZooming = false;
+  }
+});
+
+Bclose.addEventListener('click', e => {
+  closeChart();
+});
+
+
+</script>
+</body>
+</html>
+
+
+
